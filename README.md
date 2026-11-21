@@ -2,18 +2,31 @@
 
 Reusable Node.js library and CLI for daily, trend-aware Instagram photo posts. Each brand supplies its own JSON profile. The engine reads Google Trends, drafts a caption, and renders a square JPEG. The same pipeline runs as a local preview, previews in a private Telegram chat, or publishes through Instagram Login.
 
-## Connect Telegram
+## Mulai di Windows
 
-Use Node.js 22.18 or newer and [GitHub CLI](https://cli.github.com/) signed in to an account that can manage secrets in your private deployment repository.
+1. [Unduh Setup Telegram untuk Windows](https://github.com/archourium/content-automation/releases/latest/download/Setup-Telegram-Windows.zip) dan pilih **Extract All / Ekstrak Semua**. Jika aplikasi Anda sudah menyertakan launcher, buka folder aplikasinya.
+2. Klik dua kali **Mulai Setup Telegram.cmd**. Setup memeriksa komponen yang diperlukan dan memandu login GitHub jika dibutuhkan.
+3. Tempel token bot dari [BotFather](https://t.me/BotFather), lalu tekan **Start** di Telegram. Saat terhubung, bot mengirim pesan tes ke chat Anda.
 
-1. Create a dedicated preview bot with [BotFather](https://t.me/BotFather).
-2. Run the setup command and paste the bot token at the hidden prompt.
+Launcher membaca tujuan dari proyek. Untuk unduhan mandiri, masukkan alamat repo GitHub privat tempat otomatisasi Anda berjalan. Bot harus dapat menerima pesan dari chat pribadi Anda. Setup akan meminta Anda memakai bot tersendiri bila bot yang dipilih sudah terhubung ke webhook lain.
 
-   ```sh
-   node scripts/connect-telegram.mjs --repo OWNER/PRIVATE_REPO
-   ```
+## Install in an application
 
-3. Open the one-time Telegram link and press **Start**. Setup detects the private chat, saves the connection as a single GitHub Actions secret, and sends a test message. To change the recipient, run setup again and open the new link in the desired Telegram account.
+Install the compiled package from the GitHub release:
+
+```sh
+npm install --save-dev https://github.com/archourium/content-automation/releases/download/v0.3.0/content-automation-0.3.0.tgz
+```
+
+Copy `Mulai Setup Telegram.cmd` from the package to the application's root, next to its `package.json`. Set the following field in that manifest so people can launch setup directly:
+
+```json
+{
+  "contentAutomation": { "repository": "OWNER/PRIVATE_REPO" }
+}
+```
+
+For macOS, Linux, or terminal use, run `node node_modules/content-automation/scripts/connect-telegram.mjs` from the application root. The wizard requires Node.js 22.18+ and GitHub CLI with access to the deployment repo. Use `--repo OWNER/PRIVATE_REPO` to select a different deployment or `--check` to check access without pairing.
 
 The connection test runs without Cloudflare or Instagram. For automated runs, pass the `TELEGRAM_CONNECTION` Actions secret to the CLI and use `--mode telegram-check` to test it, or `--mode telegram` to send a generated photo and caption. Generating a new photo uses Cloudflare Workers AI.
 

@@ -1,6 +1,8 @@
 #!/usr/bin/env node
 import { spawn, spawnSync } from 'node:child_process';
 import { randomBytes } from 'node:crypto';
+import { readFile } from 'node:fs/promises';
+import { createInterface } from 'node:readline/promises';
 import { parseArgs } from 'node:util';
 
 export async function telegramRequest(token, method, body = {}, fetchRequest = fetch) {
@@ -13,15 +15,15 @@ export async function telegramRequest(token, method, body = {}, fetchRequest = f
       signal: AbortSignal.timeout(16_000)
     });
   } catch {
-    throw new Error('Could not reach the Telegram Bot API.');
+    throw new Error('Telegram belum dapat dihubungi. Periksa internet, lalu buka setup lagi.');
   }
   const result = await response.json().catch(() => null);
   const code = result?.error_code ?? response.status;
   if (code === 401 || code === 404) {
-    throw new Error('Telegram rejected the bot token. Copy the current token from BotFather.');
+    throw new Error('Token bot ditolak. Salin token terbaru dari BotFather dan coba lagi.');
   }
   if (code === 409) {
-    throw new Error('Telegram is already receiving updates for this bot elsewhere. Use a dedicated bot or stop its other polling session.');
+    throw new Error('Bot ini sedang digunakan aplikasi lain. Pakai bot khusus preview atau hentikan aplikasi tersebut sebelum mencoba lagi.');
   }
   if (!response.ok || !result?.ok) throw new Error(`Telegram ${method} failed (HTTP ${response.status}).`);
   return result.result;
@@ -37,7 +39,7 @@ export async function pairTelegram(request, presentLink, {
     throw new Error('Telegram returned an invalid bot profile.');
   }
   const webhook = await request('getWebhookInfo');
-  if (webhook?.url) throw new Error('This bot already uses a webhook. Create a dedicated bot for previews in BotFather.');
+  if (webhook?.url) throw new Error('Bot ini sudah digunakan oleh webhook lain. Buat bot khusus preview melalui BotFather.');
 
   const link = `https://t.me/${bot.username}?start=${code}`;
   const deadline = now() + timeoutMs;
@@ -58,12 +60,12 @@ export async function pairTelegram(request, presentLink, {
       }
     }
   }
-  throw new Error('Telegram pairing timed out. Run setup again and press Start in the new link.');
+  throw new Error('Waktu untuk menekan Start habis. Buka setup lagi untuk mendapatkan tautan baru.');
 }
 
 function readToken() {
-  if (!process.stdin.isTTY) throw new Error('Run this command in an interactive terminal.');
-  process.stdout.write('Paste the BotFather token and press Enter (input hidden): ');
+  if (!process.stdin.isTTY) throw new Error('Klik dua kali Mulai Setup Telegram.cmd untuk memasukkan token.');
+  process.stdout.write('Tempel token bot, lalu tekan Enter (token disembunyikan): ');
   return new Promise((resolve, reject) => {
     let input = '';
     const originalRaw = process.stdin.isRaw;
@@ -77,7 +79,7 @@ function readToken() {
     }
     function onInput(buffer) {
       for (const character of buffer.toString()) {
-        if (character === '\u0003') return finish(new Error('Setup cancelled.'));
+        if (character === '\u0003') return finish(new Error('Setup dibatalkan.'));
         if (character === '\r' || character === '\n') return finish();
         if (character === '\u007f' || character === '\b') input = input.slice(0, -1);
         else if (/^[\x20-\x7e]$/.test(character)) input += character;
@@ -96,8 +98,7 @@ function github(args, input, failureMessage) {
   return result.stdout;
 }
 
-function openTelegram(link) {
-  console.log(`\nOpen this one-time link and press Start within 3 minutes:\n${link}\n`);
+function openLink(link) {
   const command = {
     win32: ['rundll32.exe', 'url.dll,FileProtocolHandler'],
     darwin: ['open'],
@@ -110,37 +111,88 @@ function openTelegram(link) {
   browser.unref();
 }
 
+async function ask(question) {
+  const input = createInterface({ input: process.stdin, output: process.stdout });
+  try { return (await input.question(question)).trim(); }
+  finally { input.close(); }
+}
+
+export function normalizeRepo(value) {
+  if (typeof value !== 'string') throw new Error('Masukkan alamat repo GitHub privat milik proyek Anda.');
+  const slug = value.trim().replace(/^https:\/\/github\.com\//i, '').replace(/\/$/, '').replace(/\.git$/, '');
+  if (!/^[\w-]+\/[\w.-]+$/.test(slug)) throw new Error('Alamat repo belum sesuai. Contoh: https://github.com/nama/proyek-privat');
+  return slug;
+}
+
+async function projectRepository() {
+  try {
+    const manifest = JSON.parse(await readFile('package.json', 'utf8'));
+    return manifest.contentAutomation?.repository;
+  } catch (error) {
+    if (error.code === 'ENOENT') return undefined;
+    throw new Error('File package.json di folder proyek tidak bisa dibaca.');
+  }
+}
+
 async function main() {
   const { values } = parseArgs({
-    options: { repo: { type: 'string' }, help: { type: 'boolean', short: 'h' } }
+    options: { repo: { type: 'string' }, check: { type: 'boolean' }, help: { type: 'boolean', short: 'h' } }
   });
   if (values.help) {
-    console.log('Usage: node connect-telegram.mjs --repo OWNER/PRIVATE_REPO');
+    console.log('Usage: node connect-telegram.mjs [--repo OWNER/PRIVATE_REPO] [--check]');
     return;
   }
-  if (!values.repo || !/^[\w-]+\/[\w.-]+$/.test(values.repo)) {
-    throw new Error('Pass --repo OWNER/PRIVATE_REPO. Use your deployment repository.');
+
+  let destination = values.repo ?? await projectRepository();
+  if (!destination && process.stdin.isTTY && !values.check) {
+    destination = await ask('Tempel alamat GitHub repo privat tempat otomatisasi proyek Anda berjalan: ');
+  }
+  const slug = normalizeRepo(destination);
+  const repository = `github.com/${slug}`;
+  console.log(`Langkah 1. Memeriksa akses GitHub untuk ${slug}.`);
+  if (!values.check && process.stdin.isTTY) {
+    const auth = spawnSync('gh', ['auth', 'status', '--active', '--hostname', 'github.com'], {
+      stdio: 'ignore', windowsHide: true, timeout: 30_000
+    });
+    if (auth.error?.code === 'ENOENT') throw new Error('Pasang GitHub CLI dari https://cli.github.com/ lalu buka setup lagi.');
+    if (auth.status !== 0) {
+      await ask('Tekan Enter untuk masuk ke GitHub lewat browser. ');
+      const login = spawnSync('gh', ['auth', 'login', '--hostname', 'github.com', '--web', '--git-protocol', 'https'], { stdio: 'inherit' });
+      if (login.status !== 0) throw new Error('Login GitHub belum selesai. Buka setup lagi setelah berhasil masuk.');
+    }
+  }
+  const privateRepo = JSON.parse(github(['repo', 'view', repository, '--json', 'visibility'], undefined,
+    `Repo ${slug} tidak bisa dibuka. Periksa koneksi internet dan akses akun GitHub Anda.`));
+  if (privateRepo.visibility !== 'PRIVATE') throw new Error('Pilih repo privat untuk menyimpan koneksi Telegram.');
+  github(['secret', 'list', '--repo', repository], undefined, 'Akun GitHub ini belum bisa mengakses secrets di repo tujuan.');
+  if (values.check) {
+    console.log('Setup siap. Repo tujuan dapat diakses.');
+    return;
   }
 
-  const repository = `github.com/${values.repo}`;
-  const privateRepo = JSON.parse(github(['repo', 'view', repository, '--json', 'visibility'], undefined,
-    'Cannot open the deployment repository. Run gh auth login and check the repository name and account.'));
-  if (privateRepo.visibility !== 'PRIVATE') throw new Error('Choose the private deployment repository.');
-  github(['secret', 'list', '--repo', repository], undefined, 'This GitHub account cannot manage secrets in the deployment repository.');
-
-  const token = process.env.TELEGRAM_BOT_TOKEN?.trim() || await readToken();
-  if (!/^\d+:[A-Za-z0-9_-]+$/.test(token)) throw new Error('Enter a bot token from BotFather.');
+  console.log('\nLangkah 2. Siapkan token dari BotFather. Jika belum punya token, tekan Enter untuk membuka BotFather.');
+  let token = process.env.TELEGRAM_BOT_TOKEN?.trim() || await readToken();
+  if (!token) {
+    console.log('Di https://t.me/BotFather, pilih /newbot lalu ikuti petunjuk. Salin token dan kembali ke sini.');
+    openLink('https://t.me/BotFather');
+    token = await readToken();
+  }
+  if (!/^\d+:[A-Za-z0-9_-]+$/.test(token)) throw new Error('Format token belum sesuai. Salin seluruh token dari BotFather dan buka setup lagi.');
   const request = (method, payload) => telegramRequest(token, method, payload);
-  const chat = await pairTelegram(request, openTelegram);
+  console.log("\nLangkah 3. Tekan Start di Telegram untuk memilih chat pribadi Anda.");
+  const chat = await pairTelegram(request, link => {
+    console.log("Jika Telegram belum terbuka, buka tautan ini dalam 3 menit:\n" + link);
+    openLink(link);
+  });
 
   github(['secret', 'set', 'TELEGRAM_CONNECTION', '--repo', repository],
-    JSON.stringify({ token, chat }), 'Could not save the Telegram connection. Verify GitHub access and run setup again.');
-  console.log(`Telegram connection saved in ${values.repo}.`);
+    JSON.stringify({ token, chat }), 'Koneksi belum bisa disimpan di GitHub. Periksa akses ke repo dan buka setup lagi.');
+  console.log(`Koneksi Telegram tersimpan di ${slug}.`);
   try {
-    await request('sendMessage', { chat_id: chat, text: 'Telegram is connected. Content previews can be sent to this chat.' });
-    console.log('Test message delivered.');
+    await request('sendMessage', { chat_id: chat, text: 'Telegram sudah tersambung. Preview konten akan dikirim ke chat ini.' });
+    console.log('Selesai. Cek pesan tes di Telegram. Jendela ini sudah bisa ditutup.');
   } catch {
-    throw new Error('Connection saved, but Telegram could not deliver the test message. Check that the bot is unblocked and run the Telegram test workflow.');
+    throw new Error('Koneksi tersimpan. Pesan tes gagal terkirim. Pastikan bot dapat mengirim pesan ke chat Anda, lalu jalankan telegram-check di GitHub Actions.');
   }
 }
 

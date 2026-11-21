@@ -5,3 +5,4 @@ output/
 !.env.example
 .wrangler/
 cloudflare/wrangler.jsonc
+dist/

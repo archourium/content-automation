@@ -1,15 +1,40 @@
 {
   "name": "content-automation",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "type": "module",
   "license": "MIT",
-  "engines": { "node": ">=22.18" },
-  "exports": "./src/engine.ts",
+  "engines": {
+    "node": ">=22.18"
+  },
+  "exports": {
+    "types": "./dist/engine.d.ts",
+    "import": "./dist/engine.js"
+  },
   "scripts": {
     "start": "node --disable-warning=ExperimentalWarning src/cli.ts",
     "test": "node --test test/*.test.ts test/*.test.mjs",
-    "check": "tsc --noEmit"
+    "check": "tsc --noEmit",
+    "build": "tsc -p tsconfig.build.json",
+    "prepack": "npm run build"
   },
-  "dependencies": { "fast-xml-parser": "^5.3.6", "sharp": "^0.34.5", "zod": "^4.3.6" },
-  "devDependencies": { "@types/node": "^22", "typescript": "^5.9.3" }
+  "dependencies": {
+    "fast-xml-parser": "^5.3.6",
+    "sharp": "^0.34.5",
+    "zod": "^4.3.6"
+  },
+  "devDependencies": {
+    "@types/node": "^22",
+    "typescript": "^5.9.3"
+  },
+  "files": [
+    "dist",
+    "src",
+    "scripts/connect-telegram.mjs",
+    "profiles/example.json",
+    "cloudflare/*.ts",
+    "cloudflare/schema.sql",
+    "cloudflare/wrangler.example.jsonc",
+    "Mulai Setup Telegram.cmd",
+    "tsconfig*.json"
+  ]
 }

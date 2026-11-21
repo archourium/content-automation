@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { pairTelegram, telegramRequest } from '../scripts/connect-telegram.mjs';
+import { normalizeRepo, pairTelegram, telegramRequest } from '../scripts/connect-telegram.mjs';
 import { readTelegramConnection } from '../src/telegram-config.ts';
 
 const makeUpdate = (update_id, type, text, id = 42) => ({ update_id, message: { text, chat: { id, type } } });
@@ -27,7 +27,7 @@ test('leaves an existing webhook alone and gives an actionable error', async () 
   await assert.rejects(pairTelegram(async method => {
     methods.push(method);
     return method === 'getMe' ? { is_bot: true, username: 'PreviewBot' } : { url: 'https://example.test' };
-  }, () => assert.fail('Did not expect a Start link')), /dedicated bot/i);
+  }, () => assert.fail('Did not expect a Start link')), /bot khusus/i);
   assert.deepEqual(methods, ['getMe', 'getWebhookInfo']);
 });
 
@@ -38,7 +38,7 @@ test('stops polling at the deadline with no inferred recipient', async () => {
     if (method === 'getWebhookInfo') return { url: '' };
     now += 10_000;
     return [makeUpdate(now, 'private', '/start')];
-  }, () => {}, { timeoutMs: 20_000, now: () => now }), /timed out/i);
+  }, () => {}, { timeoutMs: 20_000, now: () => now }), /waktu.*habis/i);
   assert.equal(now, 20_000);
 });
 
@@ -46,10 +46,10 @@ test('API failures never echo credentials or Telegram response text', async () =
   const token = '987:abcdefghijklmnopqrstuvwxyz';
   await assert.rejects(telegramRequest(token, 'getMe', {}, async () => {
     throw new Error(token);
-  }), error => error.message === 'Could not reach the Telegram Bot API.');
+  }), error => error.message === 'Telegram belum dapat dihubungi. Periksa internet, lalu buka setup lagi.');
   await assert.rejects(telegramRequest(token, 'getMe', {}, async () =>
     Response.json({ ok: false, error_code: 401, description: token }, { status: 401 })
-  ), error => error.message === 'Telegram rejected the bot token. Copy the current token from BotFather.');
+  ), error => error.message === 'Token bot ditolak. Salin token terbaru dari BotFather dan coba lagi.');
 });
 
 test('prefers the paired secret and preserves existing deployments', () => {
@@ -61,4 +61,10 @@ test('prefers the paired secret and preserves existing deployments', () => {
   assert.deepEqual(readTelegramConnection({ TELEGRAM_BOT_TOKEN: 'old', TELEGRAM_CHAT_ID: '-100' }), { token: 'old', chat: '-100' });
   assert.equal(readTelegramConnection({ TELEGRAM_BOT_TOKEN: 'old' }), undefined);
   assert.throws(() => readTelegramConnection({ TELEGRAM_CONNECTION: '{"token":"sensitive"}' }), /invalid/i);
+});
+
+test('accepts a pasted private repository URL or project slug', () => {
+  assert.equal(normalizeRepo(' https://github.com/example/project.git/ '), 'example/project');
+  assert.equal(normalizeRepo('example/project'), 'example/project');
+  assert.throws(() => normalizeRepo('https://unrelated.example/example/project'));
 });
