@@ -1,0 +1,10 @@
+{
+  "compilerOptions": {
+    "target": "ES2023",
+    "module": "NodeNext",
+    "strict": true,
+    "allowImportingTsExtensions": true,
+    "skipLibCheck": true
+  },
+  "include": ["src/**/*.ts", "test/**/*.ts", "cloudflare/**/*.ts"]
+}

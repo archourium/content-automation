@@ -1,0 +1,12 @@
+{
+  "id": "example",
+  "name": "Example Brand",
+  "region": "ID",
+  "timeZone": "Asia/Makassar",
+  "language": "Bahasa Indonesia",
+  "audience": "Pembaca Indonesia yang ingin membangun kebiasaan kreatif.",
+  "voice": "Hangat dan ringkas. Akhiri dengan satu ide yang bisa langsung dicoba.",
+  "visual": "Editorial illustration with textured paper, deep indigo and warm orange.",
+  "themes": ["kreativitas", "menulis", "kebiasaan"],
+  "fallbackTopics": ["Coba jurnal satu kalimat", "Luangkan lima menit untuk menulis"]
+}
