@@ -4,7 +4,8 @@ import { parseArgs } from 'node:util';
 import sharp from 'sharp';
 import { createPost, fetchTrends, localDate, profileSchema, recentTrends } from './engine.ts';
 import type { Generator } from './engine.ts';
-import { instagram, telegram, workersAI } from './providers.ts';
+import { instagram, telegram, telegramMessage, workersAI } from './providers.ts';
+import { readTelegramConnection } from './telegram-config.ts';
 import { checkPublication, publishPost } from './publish.ts';
 import { storage } from './storage.ts';
 
@@ -38,8 +39,21 @@ async function main() {
     }
   });
   const mode = values.mode;
-  if (mode !== 'preview' && mode !== 'telegram' && mode !== 'instagram') throw new Error('Use preview, telegram, or instagram mode.');
+  if (mode !== 'preview' && mode !== 'telegram' && mode !== 'telegram-check' && mode !== 'instagram') {
+    throw new Error('Use preview, telegram, telegram-check, or instagram mode.');
+  }
   if (values.fixture && mode !== 'preview') throw new Error('Fixture generation is available only in preview mode.');
+
+  const telegramCredentials = mode === 'telegram' || mode === 'telegram-check'
+    ? readTelegramConnection(process.env) : undefined;
+  if ((mode === 'telegram' || mode === 'telegram-check') && !telegramCredentials) {
+    throw new Error('Telegram is not connected. Run scripts/connect-telegram.mjs with your private repository.');
+  }
+  if (mode === 'telegram-check' && telegramCredentials) {
+    await telegramMessage(telegramCredentials.token, telegramCredentials.chat, 'Test message from your content automation workflow.');
+    console.log('Telegram test message delivered.');
+    return;
+  }
 
   const profile = profileSchema.parse(JSON.parse(await readFile(values.profile, 'utf8')));
   const now = new Date();
@@ -55,8 +69,6 @@ async function main() {
   }
 
   const generator = values.fixture ? placeholder : workersAI(required('CLOUDFLARE_ACCOUNT_ID'), required('CLOUDFLARE_API_TOKEN'));
-  const telegramCredentials = mode === 'telegram'
-    ? { token: required('TELEGRAM_BOT_TOKEN'), chat: required('TELEGRAM_CHAT_ID') } : undefined;
   const current = await fetchTrends(profile.region).catch((error: unknown) => {
     console.warn(error instanceof Error ? error.message : 'Could not read Google Trends.');
     return [];
@@ -76,15 +88,15 @@ async function main() {
     if (telegramCredentials) await telegram(telegramCredentials.token, telegramCredentials.chat, image, post.caption);
     console.log(`Saved ${prefix}.jpg and .json.`);
   } catch (error) {
-    if (mode === 'instagram' && process.env.TELEGRAM_BOT_TOKEN && process.env.TELEGRAM_CHAT_ID) {
-      const note = 'Daily Instagram publication failed. See the private workflow run.';
-      const endpoint = `https://api.telegram.org/bot${process.env.TELEGRAM_BOT_TOKEN}/sendMessage`;
-      await fetch(endpoint, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ chat_id: process.env.TELEGRAM_CHAT_ID, text: note }),
-        signal: AbortSignal.timeout(10_000)
-      }).catch(() => {});
+    if (mode === 'instagram') {
+      try {
+        const connection = readTelegramConnection(process.env);
+        if (connection) {
+          await telegramMessage(connection.token, connection.chat, 'Daily Instagram publication failed. See the private workflow run.');
+        }
+      } catch {
+        console.warn('Could not send the optional Telegram notification.');
+      }
     }
     throw error;
   }

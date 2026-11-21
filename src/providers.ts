@@ -3,7 +3,7 @@ import type { Generator } from './engine.ts';
 export async function requestJson<T>(service: string, url: string, options: RequestInit = {}): Promise<T> {
   let response: Response;
   try {
-    response = await fetch(url, { ...options, signal: AbortSignal.timeout(90_000) });
+    response = await fetch(url, { ...options, signal: options.signal ?? AbortSignal.timeout(90_000) });
   } catch {
     throw new Error(`${service} request failed or timed out.`);
   }
@@ -84,4 +84,14 @@ export async function telegram(token: string, chat: string, image: Buffer, capti
     method: 'POST', body: form
   });
   if (!result.ok) throw new Error('Telegram rejected the preview.');
+}
+
+export async function telegramMessage(token: string, chat: string, message: string) {
+  const result = await requestJson<{ ok: boolean }>('Telegram', `https://api.telegram.org/bot${token}/sendMessage`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ chat_id: chat, text: message }),
+    signal: AbortSignal.timeout(10_000)
+  });
+  if (!result.ok) throw new Error('Telegram rejected the message.');
 }
