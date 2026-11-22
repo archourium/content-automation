@@ -65,6 +65,12 @@ Give the **runtime** token Workers AI Read/Edit and **D1 Edit** on the selected 
 
 Pass the matching variables as environment variables to the publish step, complete the [Instagram authorization](../README.md#connect-instagram), and run a manual publication before enabling a schedule.
 
+### Use a Worker-scoped storage key
+
+If the deployment should avoid granting GitHub Actions access to the full Cloudflare account's D1 API, generate a random key and set it as the Worker secret **MEDIA_STORAGE_TOKEN** with Wrangler. Save the same key as **MEDIA_STORAGE_TOKEN** in the private GitHub repository and pass it into the publish job. Keep **CLOUDFLARE_API_TOKEN** scoped to Workers AI. The Worker allows only the library's parameterized queries on its bound D1 database. The photo URLs remain public until their expiration so Meta can fetch the image.
+
+Use **MEDIA_STORAGE_TOKEN** only with the HTTPS origin of your own deployed media Worker. Verify the deployment with a preview or manual publication after changing credentials.
+
 ## Troubleshooting
 
 | Symptom | What to check |

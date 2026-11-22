@@ -62,7 +62,7 @@ async function main() {
   const account = mode === 'instagram' ? required('INSTAGRAM_ACCOUNT_ID') : undefined;
   const api = account ? instagram(account, required('INSTAGRAM_ACCESS_TOKEN'), process.env.INSTAGRAM_API_VERSION, process.env.INSTAGRAM_GRAPH_HOST) : undefined;
   const store = account ? storage(required('CLOUDFLARE_ACCOUNT_ID'), process.env.CLOUDFLARE_D1_API_TOKEN || required('CLOUDFLARE_API_TOKEN'),
-    required('CLOUDFLARE_D1_ID'), required('MEDIA_BASE_URL')) : undefined;
+    required('CLOUDFLARE_D1_ID'), required('MEDIA_BASE_URL'), process.env.MEDIA_STORAGE_TOKEN) : undefined;
   if (api && store && account && await checkPublication(api, store, account, day)) {
     console.log('This Instagram account already published today.');
     return;
