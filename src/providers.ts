@@ -19,10 +19,12 @@ export async function requestJson<T>(service: string, url: string, options: Requ
 export function cloudflare(account: string, token: string) {
   const base = `https://api.cloudflare.com/client/v4/accounts/${encodeURIComponent(account)}`;
   return async <T>(path: string, body: unknown, service: string) => {
+    const headers = new Headers({ Authorization: `Bearer ${token}` });
+    if (!(body instanceof FormData)) headers.set('Content-Type', 'application/json');
     const envelope = await requestJson<{ success: boolean; result: T }>(service, base + path, {
       method: 'POST',
-      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify(body)
+      headers,
+      body: body instanceof FormData ? body : JSON.stringify(body)
     });
     if (!envelope.success) throw new Error(`${service} rejected the request.`);
     return envelope.result;
@@ -47,12 +49,42 @@ export function workersAI(account: string, token: string): Generator {
       if (typeof content !== 'string') throw new Error('Workers AI returned no caption.');
       return JSON.parse(content);
     },
-    async draw(prompt) {
+    async draw(prompt, options) {
+      const multipart = new FormData();
+      multipart.set('prompt', prompt);
+      multipart.set('width', '1024');
+      multipart.set('height', '1024');
+      const highQuality = options?.quality === 'high';
       const result = await api<{ image?: string }>(
-        '/ai/run/@cf/black-forest-labs/flux-1-schnell', { prompt, steps: 4 }, 'Workers AI image'
+        highQuality ? '/ai/run/@cf/black-forest-labs/flux-2-klein-9b' : '/ai/run/@cf/black-forest-labs/flux-1-schnell',
+        highQuality ? multipart : { prompt, steps: 4 },
+        'Workers AI image'
       );
       if (!result.image) throw new Error('Workers AI returned no image.');
       return Buffer.from(result.image, 'base64');
+    },
+    async inspectImage(image, instructions) {
+      const result = await api<{ choices?: { message?: { content?: string } }[] }>(
+        '/ai/run/@cf/google/gemma-4-26b-a4b-it',
+        {
+          messages: [{ role: 'user', content: [
+            { type: 'text', text: instructions },
+            { type: 'image_url', image_url: { url: `data:image/jpeg;base64,${image.toString('base64')}` } }
+          ] }],
+          response_format: { type: 'json_object' },
+          chat_template_kwargs: { enable_thinking: false },
+          max_completion_tokens: 512,
+          temperature: 0
+        },
+        'Workers AI visual review'
+      );
+      const content = result.choices?.[0]?.message?.content;
+      if (typeof content !== 'string') throw new Error('Workers AI returned no visual review.');
+      try {
+        return JSON.parse(content);
+      } catch {
+        throw new Error('Workers AI returned an unreadable visual review.');
+      }
     }
   };
 }

@@ -59,3 +59,58 @@ test('a repeated run reconciles an uncertain publish without sending another', a
   assert.equal(row?.status, 'published');
   assert.equal(publishCalls, 1);
 });
+
+test('reviews the delivery JPEG, redraws a rejected scene, and uses the reviewed alt text', async () => {
+  const prompts: string[] = [];
+  const reviewed: Buffer[] = [];
+  const { post, image } = await createPost({ ...profile, imageReview: 'objects-only' }, [], now, {
+    async write(system) {
+      assert.match(system, /unoccupied still life/i);
+      return { trendIndex: null, caption: 'Write one sentence.', altText: 'A hand', imagePrompt: 'A journal' };
+    },
+    async draw(prompt, options) {
+      assert.equal(options?.quality, 'high');
+      prompts.push(prompt);
+      return sharp({ create: { width: 32, height: 32, channels: 3, background: prompts.length === 1 ? '#554477' : '#cc8866' } }).png().toBuffer();
+    },
+    async inspectImage(image, instructions) {
+      assert.match(instructions, /hands/i);
+      reviewed.push(image);
+      return reviewed.length === 1
+        ? { approved: false, reason: 'There is a detached hand.' }
+        : { approved: true, altText: 'A closed journal beside a brass lamp.' };
+    }
+  });
+  assert.equal(prompts.length, 2);
+  assert.match(prompts[1], /unoccupied still life/i);
+  assert.deepEqual(image, reviewed[1]);
+  assert.notDeepEqual(image, reviewed[0]);
+  assert.equal((await sharp(reviewed[1]).metadata()).width, 1080);
+  assert.equal(post.altText, 'A closed journal beside a brass lamp.');
+});
+
+test('rejects a second failed review and refuses invalid or missing review results', async () => {
+  const reviewedProfile = { ...profile, imageReview: 'objects-only' as const };
+  let draws = 0;
+  const generator = {
+    async write() {
+      return { trendIndex: null, caption: 'Write one sentence.', altText: 'A journal', imagePrompt: 'A journal' };
+    },
+    draw() {
+      draws++;
+      return sharp({ create: { width: 32, height: 32, channels: 3, background: '#554477' } }).png().toBuffer();
+    }
+  };
+  await assert.rejects(createPost(reviewedProfile, [], now, generator), /requires an image reviewer/);
+  assert.equal(draws, 0);
+  await assert.rejects(createPost(reviewedProfile, [], now, {
+    ...generator,
+    async inspectImage() { return { approved: 'true' }; }
+  }), /no valid decision/);
+  assert.equal(draws, 1);
+  await assert.rejects(createPost(reviewedProfile, [], now, {
+    ...generator,
+    async inspectImage() { return { approved: false, reason: 'Visible body part' }; }
+  }), /failed visual review twice/);
+  assert.equal(draws, 3);
+});

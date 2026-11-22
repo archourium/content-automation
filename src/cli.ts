@@ -25,6 +25,9 @@ const placeholder: Generator = {
       altText: 'Indigo preview image used to test the publication pipeline.'
     };
   },
+  async inspectImage() {
+    return { approved: true, altText: 'Indigo preview image used to test the publication pipeline.' };
+  },
   draw: () => sharp({ create: { width: 1080, height: 1080, channels: 3, background: '#151132' } })
     .jpeg().toBuffer()
 };

@@ -32,6 +32,8 @@ node --env-file=.env src/cli.ts --profile profiles/example.json --mode preview
 
 Open the JPEG and JSON in `output/`. The JPEG should be a 1080 × 1080 image and the JSON should report `"fixture": false`. The engine uses [GLM-4.7-Flash](https://developers.cloudflare.com/workers-ai/models/glm-4.7-flash/) for the caption and [FLUX.1 Schnell](https://developers.cloudflare.com/workers-ai/models/flux-1-schnell/) for the image. The `--fixture` option exercises the local pipeline with a placeholder. A successful fixture does not establish Cloudflare access.
 
+To generate and review still-life images, set `"imageReview": "objects-only"` in the brand profile. The same Workers AI token runs FLUX.2 [klein] 9B for the image and Gemma 4 26B A4B for the review. A live preview verifies that both models work for your account. See the [architecture](architecture.md) for the review and retry flow.
+
 For Telegram, connect the bot using [the Telegram setup](../README.md#set-up-telegram-on-windows) and run `--mode telegram` to send the generated image to the paired chat. If your application has a separate community workflow, run a live photo test against that community once you have authorization to post there. Verify that Telegram returned a message ID for a photo with a caption. If your scheduler uses fallback content, make sure the test requires a new Workers AI image so a fallback cannot pass the check. Use the scheduled run log to distinguish a newly generated image from a prepared fallback photo.
 
 ## 3. Deploy the media Worker for Instagram

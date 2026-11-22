@@ -2,6 +2,8 @@
 
 Reusable Node.js library and CLI for daily, trend-aware Instagram photo posts. Each brand supplies its own JSON profile. The engine reads Google Trends, drafts a caption, and renders a square JPEG. The same pipeline runs as a local preview, previews in a private Telegram chat, or publishes through Instagram Login.
 
+See the [architecture and workflow diagram](docs/architecture.md) for the AI models, image review, and shared Telegram and Instagram delivery.
+
 ## Set up Telegram on Windows
 
 1. [Download Telegram Setup for Windows](https://github.com/archourium/content-automation/releases/latest/download/Setup-Telegram-Windows.zip) and choose **Extract All**. If your application already includes the launcher, open the application folder.
@@ -46,6 +48,8 @@ The fixture verifies the real RSS read and JPEG output using a local placeholder
 ## Brand profile
 
 Copy `profiles/example.json`. Change the brand voice, audience, visual direction, and fallback topics. The feed region and IANA timezone control trend selection. Give each brand its own profile and Instagram authorization. The scheduler owns the daily posting time. A profile can also be imported by another Node application using the package exports and the `Generator` interface.
+
+Set `"imageReview": "objects-only"` in the profile to generate still-life artwork with FLUX.2 [klein] 9B and require a Gemma 4 review before delivery. This policy rejects people, visible body parts, and prominent visual defects. A rejected image gets one redraw. If a review is unavailable or both candidates fail, the engine returns an error so the deployment can use prepared editorial content.
 
 ## Set up Cloudflare
 
