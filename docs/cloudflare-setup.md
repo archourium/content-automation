@@ -32,7 +32,7 @@ node --env-file=.env src/cli.ts --profile profiles/example.json --mode preview
 
 Open the JPEG and JSON in `output/`. The JPEG should be a 1080 × 1080 image and the JSON should report `"fixture": false`. The engine uses [GLM-4.7-Flash](https://developers.cloudflare.com/workers-ai/models/glm-4.7-flash/) for the caption and [FLUX.1 Schnell](https://developers.cloudflare.com/workers-ai/models/flux-1-schnell/) for the image. The `--fixture` option exercises the local pipeline with a placeholder. A successful fixture does not establish Cloudflare access.
 
-For Telegram, connect the bot using [the Telegram setup](../README.md#set-up-telegram-on-windows) and run `--mode telegram` to send the generated image to the paired chat. Applications that have a separate community workflow should run their own photo test against the community destination.
+For Telegram, connect the bot using [the Telegram setup](../README.md#set-up-telegram-on-windows) and run `--mode telegram` to send the generated image to the paired chat. If your application has a separate community workflow, run a live photo test against that community once you have authorization to post there. Verify that Telegram returned a message ID for a photo with a caption. If your scheduler uses fallback content, make sure the test requires a new Workers AI image so a fallback cannot pass the check. Use the scheduled run log to distinguish a newly generated image from a prepared fallback photo.
 
 ## 3. Deploy the media Worker for Instagram
 
@@ -72,6 +72,6 @@ Pass the matching variables as environment variables to the publish step, comple
 | Configuration is missing | Confirm the account ID is an Actions variable, the token is an Actions secret, and the workflow maps both to the engine environment. Check the repository and environment where you saved them. |
 | Workers AI reports HTTP 401 or 403 | Check that the token belongs to the account ID and includes both Workers AI permissions. Replace the secret if the token expired or was revoked. |
 | Workers AI reports a quota or rate limit | Check the account's Workers AI dashboard. Daily free usage resets at 00:00 UTC. Leave the account on Workers Free to prevent paid inference. |
-| Preview succeeds but the Telegram group posts text | Open the group workflow's run log. If it uses a text fallback, check the warning for generation or configuration details. Confirm the group workflow reads the same account ID and token as the successful preview. |
+| Preview succeeds but the Telegram group posts text | Open the group workflow's run log and check for a warning about generation or configuration. Confirm the group workflow reads the same account ID and token as the successful preview, then run a live photo test. |
 | D1 rejects a write | Check the runtime token's D1 permission, database ID, and that `schema.sql` was applied with `--remote` to the deployed database. |
 | Meta cannot fetch the image | Verify that the configured HTTPS origin is reachable from the public internet and that the deployed Worker binds the same D1 database used by the runner. Check the media URL during the run before it expires. |
