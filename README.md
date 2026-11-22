@@ -49,6 +49,8 @@ The fixture verifies the real RSS read and JPEG output using a local placeholder
 
 Copy `profiles/example.json`. Change the brand voice, audience, visual direction, and fallback topics. The feed region and IANA timezone control trend selection. Give each brand its own profile and Instagram authorization. The scheduler owns the daily posting time. A profile can also be imported by another Node application using the package exports and the `Generator` interface.
 
+The image and caption settings below apply to source checkouts of the current default branch.
+
 Set `"imageReview": "objects-only"` in the profile to generate still-life artwork with FLUX.2 [klein] 9B and require a Gemma 4 review before delivery. This policy rejects people, visible body parts, and prominent visual defects. A rejected image gets one redraw. If a review is unavailable or both candidates fail, the engine returns an error so the deployment can use prepared editorial content.
 
 Set `captionMinWords` if the profile needs a minimum length for generated copy. The engine requests one rewrite for a caption that falls short.
