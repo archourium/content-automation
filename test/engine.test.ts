@@ -11,17 +11,18 @@ const now = new Date('2026-11-21T18:00:00Z');
 const rss = '<rss><channel><item><title>Writing &amp; reading</title><pubDate>Sat, 21 Nov 2026 08:00:00 GMT</pubDate><ht:approx_traffic>2000+</ht:approx_traffic></item></channel></rss>';
 
 test('parses RSS and uses local calendar days, deduplicating snapshots', () => {
-  assert.equal(localDate(now, profile.timeZone), '2026-11-22');
+  const timeZone = 'Asia/Makassar';
+  assert.equal(localDate(now, timeZone), '2026-11-22');
   const [trend] = parseTrends(rss);
   assert.equal(trend.title, 'Writing & reading');
-  assert.deepEqual(recentTrends([trend, trend, { ...trend, date: '2026-11-20T08:00:00Z' }], now, profile.timeZone), [trend]);
+  assert.deepEqual(recentTrends([trend, trend, { ...trend, date: '2026-11-20T08:00:00Z' }], now, timeZone), [trend]);
 });
 
 test('generates a square JPEG and falls back when no trend fits', async () => {
   const { post, image } = await createPost(profile, parseTrends(rss), now, {
     async write(_instructions, input) {
       assert.equal(JSON.parse(input).trends.length, 1);
-      return { trendIndex: null, caption: 'Tulis satu kalimat.', altText: 'An illustration', imagePrompt: 'A notebook' };
+      return { trendIndex: null, caption: 'Write one sentence.', altText: 'An illustration', imagePrompt: 'A notebook' };
     },
     draw: () => sharp({ create: { width: 48, height: 32, channels: 3, background: '#443399' } }).png().toBuffer()
   });

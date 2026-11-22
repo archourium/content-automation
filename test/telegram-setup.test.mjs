@@ -27,7 +27,7 @@ test('leaves an existing webhook alone and gives an actionable error', async () 
   await assert.rejects(pairTelegram(async method => {
     methods.push(method);
     return method === 'getMe' ? { is_bot: true, username: 'PreviewBot' } : { url: 'https://example.test' };
-  }, () => assert.fail('Did not expect a Start link')), /bot khusus/i);
+  }, () => assert.fail('Did not expect a Start link')), /dedicated preview bot/i);
   assert.deepEqual(methods, ['getMe', 'getWebhookInfo']);
 });
 
@@ -38,7 +38,7 @@ test('stops polling at the deadline with no inferred recipient', async () => {
     if (method === 'getWebhookInfo') return { url: '' };
     now += 10_000;
     return [makeUpdate(now, 'private', '/start')];
-  }, () => {}, { timeoutMs: 20_000, now: () => now }), /waktu.*habis/i);
+  }, () => {}, { timeoutMs: 20_000, now: () => now }), /timed out waiting for start/i);
   assert.equal(now, 20_000);
 });
 
@@ -46,10 +46,10 @@ test('API failures never echo credentials or Telegram response text', async () =
   const token = '987:abcdefghijklmnopqrstuvwxyz';
   await assert.rejects(telegramRequest(token, 'getMe', {}, async () => {
     throw new Error(token);
-  }), error => error.message === 'Telegram belum dapat dihubungi. Periksa internet, lalu buka setup lagi.');
+  }), error => error.message === 'Could not reach Telegram. Check your internet connection and run setup again.');
   await assert.rejects(telegramRequest(token, 'getMe', {}, async () =>
     Response.json({ ok: false, error_code: 401, description: token }, { status: 401 })
-  ), error => error.message === 'Token bot ditolak. Salin token terbaru dari BotFather dan coba lagi.');
+  ), error => error.message === 'Telegram rejected the bot token. Copy the latest token from BotFather and try again.');
 });
 
 test('prefers the paired secret and preserves existing deployments', () => {

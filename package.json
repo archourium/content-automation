@@ -1,6 +1,6 @@
 {
   "name": "content-automation",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "type": "module",
   "license": "MIT",
   "engines": {
@@ -34,7 +34,8 @@
     "cloudflare/*.ts",
     "cloudflare/schema.sql",
     "cloudflare/wrangler.example.jsonc",
-    "Mulai Setup Telegram.cmd",
+    "Set Up Telegram.cmd",
+    "docs/cloudflare-setup.md",
     "tsconfig*.json"
   ]
 }

@@ -3,10 +3,10 @@ setlocal
 cd /d "%~dp0"
 set "probe="
 if /i "%~1"=="--check" set "probe=--check"
-title Sambungkan Telegram
+title Set Up Telegram
 echo.
-echo   SAMBUNGKAN TELEGRAM
-echo   Siapkan token bot dari BotFather. Chat tujuan akan dicari otomatis.
+echo   SET UP TELEGRAM
+echo   Get your bot token from BotFather. Setup will find your chat automatically.
 echo.
 node -e "const [a,b]=process.versions.node.split('.').map(Number);process.exit(a>22 || a===22 && b>=18 ? 0 : 1)" >nul 2>&1
 if errorlevel 1 goto need_node
@@ -20,8 +20,8 @@ if exist "%wizard%" goto run
 set "wizard=node_modules\content-automation\scripts\connect-telegram.mjs"
 if not exist "package-lock.json" goto missing
 if defined probe goto missing
-echo Komponen setup perlu dipasang dari daftar paket proyek.
-choice /c YT /n /m "Pasang sekarang? [Y/T] "
+echo Setup needs to install dependencies from your project manifest.
+choice /c YN /n /m "Install now? [Y/N] "
 if errorlevel 2 goto cancelled
 call npm.cmd install --include=dev --no-audit --no-fund
 if errorlevel 1 goto failed
@@ -34,22 +34,22 @@ if not defined probe pause
 exit /b 0
 
 :need_node
-echo Unduh Node.js versi LTS 22.18 atau lebih baru, pasang, lalu buka file ini lagi.
+echo Install Node.js 22.18 or later, then open this file again.
 if not defined probe start "" "https://nodejs.org/en/download"
 goto failed
 
 :need_gh
-echo Pasang GitHub CLI agar setup dapat menyimpan koneksi Telegram di akun GitHub Anda.
-echo Setelah terpasang, buka file ini lagi.
+echo Install GitHub CLI so setup can save the Telegram connection to your GitHub account.
+echo After installation, open this file again.
 if not defined probe start "" "https://cli.github.com/"
 goto failed
 
 :missing
-echo File setup belum ditemukan. Ekstrak seluruh ZIP atau buka launcher dari folder proyek.
+echo Setup files are missing. Extract the entire ZIP or open this launcher from the project folder.
 goto failed
 
 :cancelled
-echo Setup dibatalkan.
+echo Setup cancelled.
 :failed
 if not defined probe pause
 exit /b 1
