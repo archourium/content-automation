@@ -57,9 +57,12 @@ export function workersAI(account: string, token: string): Generator {
   };
 }
 
-export function instagram(account: string, token: string, version = 'v27.0') {
+export function instagram(account: string, token: string, version = 'v27.0', host = 'graph.instagram.com') {
   if (!/^v\d+\.\d+$/.test(version) || !/^\d+$/.test(account)) throw new Error('Invalid Instagram account ID or API version.');
-  const base = `https://graph.instagram.com/${version}`;
+  if (host !== 'graph.instagram.com' && host !== 'graph.facebook.com') {
+    throw new Error('Use graph.instagram.com for Instagram Login or graph.facebook.com for Unified Login.');
+  }
+  const base = `https://${host}/${version}`;
   const headers = { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' };
   const send = (path: string, body: unknown) => requestJson<{ id: string }>('Instagram', base + path, {
     method: 'POST', headers, body: JSON.stringify(body)

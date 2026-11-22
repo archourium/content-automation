@@ -1,6 +1,6 @@
 # Connect Instagram to Content Automation
 
-Content Automation publishes individual photos through **Instagram API with Instagram Login** at `graph.instagram.com`. Set up the Meta app and authorize the Instagram account first, then run a manual publication before enabling a schedule.
+Content Automation publishes photos through the Instagram API. It supports Instagram Login and Unified Login. Set up the Meta app and authorize the Instagram account first, then run a manual publication before enabling a schedule.
 
 ## 1. Choose the owner and posting account
 
@@ -12,8 +12,8 @@ Content Automation publishes individual photos through **Instagram API with Inst
 
 1. Sign in to [Meta for Developers → My Apps](https://developers.facebook.com/apps/) with the Meta identity that should administer the app. A browser profile and its Google email do not determine which Meta identity is signed in. Open an existing app if it already has the right Instagram use case.
 2. If you need an app, choose **Create App**, enter a name, and check the contact email. Under **Use cases**, choose **Manage messaging & content on Instagram**. It may appear under **Content management**. Follow the business and requirements screens and review the terms shown on the creation screen. Meta may ask the app administrator to re-enter their Facebook password before completing app creation. If the wizard offers to connect a Business Portfolio later, you can use that option for initial testing. Meta may require a portfolio and business verification for broader access or publication of the app.
-3. From **Dashboard**, select **Customize the Manage messaging & content on Instagram use case**. Open **API setup with Instagram login** or **API setup with Instagram business login**, depending on the label in your dashboard.
-4. In **Permissions and features**, confirm that the app can request `instagram_business_basic` and `instagram_business_content_publish` under Standard Access for the account you are testing. Review the permissions shown when authorizing the account and grant the access needed for photo publishing. [Meta content publishing requirements](https://developers.facebook.com/documentation/instagram-platform/content-publishing#requirements)
+3. From **Dashboard**, select **Customize the Manage messaging & content on Instagram use case**. Open **API setup with Instagram login** or **API setup with Instagram business login** if available. If the app only offers **API setup with Unified login**, use that option. Unified Login requires a Business Portfolio before the test-token controls appear. Connect an existing portfolio where possible, or create one using the same Meta administrator and business email. [Meta Unified Login setup](https://developers.facebook.com/documentation/instagram-platform/instagram-api-with-unified-login/get-started)
+4. In **Permissions and features**, confirm that the app can request `instagram_business_basic` and `instagram_business_content_publish` under Standard Access for the account you are testing with Instagram Login. For Unified Login, use the publishing permissions listed for that flow, including `instagram_basic` and `instagram_content_publish`. Review the permissions shown when authorizing the account and grant the access needed for photo publishing. [Meta content publishing requirements](https://developers.facebook.com/documentation/instagram-platform/content-publishing#requirements)
 
 ## 3. Invite and verify the Instagram Tester
 
@@ -25,9 +25,9 @@ If the invitation is missing, first compare all three visible values: the Meta a
 
 ## 4. Generate and verify the token
 
-1. In **API setup with Instagram login → Generate access tokens**, find the approved Instagram account and select **Generate token**. If the account is not listed, choose **Add account** and complete the prompt to sign in with that same Professional account. Approve the requested profile and publishing permissions.
+1. In **Generate access tokens** on the selected API setup page, find the approved Instagram account and select **Generate token**. If the account is not listed, choose **Add account** and complete the prompt to sign in with that same Professional account. Approve the requested profile and publishing permissions.
 2. Copy the Instagram User access token when Meta shows it. Save it directly as `INSTAGRAM_ACCESS_TOKEN` in **Settings → Secrets and variables → Actions → Secrets** in your private deployment repository. Keep it out of the profile JSON, logs, screenshots, chat, and version control. Dashboard-generated long-lived tokens typically last 60 days. [Meta token setup and refresh](https://developers.facebook.com/documentation/instagram-platform/instagram-api-with-instagram-login/get-started)
-3. With the token loaded as an environment variable in a private shell, make the following read-only request. Verify that `username` is your posting account. Put the returned `user_id` in the Actions variable `INSTAGRAM_ACCOUNT_ID`. The Meta App ID and the Instagram App ID are separate values.
+3. For Instagram Login, with the token loaded as an environment variable in a private shell, make the following read-only request. Verify that `username` is your posting account. Put the returned `user_id` in the Actions variable `INSTAGRAM_ACCOUNT_ID`. The Meta App ID and the Instagram App ID are separate values.
 
 ```sh
 curl --fail-with-body --silent --show-error \
@@ -42,6 +42,8 @@ env:
   INSTAGRAM_ACCOUNT_ID: ${{ vars.INSTAGRAM_ACCOUNT_ID }}
   INSTAGRAM_ACCESS_TOKEN: ${{ secrets.INSTAGRAM_ACCESS_TOKEN }}
 ```
+
+For Unified Login, set the Actions variable **INSTAGRAM_GRAPH_HOST** to **graph.facebook.com**, pass it to the job as an environment variable, and use the Instagram account ID displayed in the dashboard. Verify the token against **GET /<INSTAGRAM_ACCOUNT_ID>?fields=username** on that host. With a Unified Login system-user token, **/me** identifies the integration user. See [Meta Unified Login authentication](https://developers.facebook.com/documentation/instagram-platform/instagram-api-with-unified-login/authentication) for account discovery, token types, and expiry settings.
 
 ## 5. Verify the first publication
 

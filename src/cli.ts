@@ -60,8 +60,8 @@ async function main() {
   const day = localDate(now, profile.timeZone);
   const previousDay = localDate(new Date(Date.parse(day) - 86_400_000), 'UTC');
   const account = mode === 'instagram' ? required('INSTAGRAM_ACCOUNT_ID') : undefined;
-  const api = account ? instagram(account, required('INSTAGRAM_ACCESS_TOKEN'), process.env.INSTAGRAM_API_VERSION) : undefined;
-  const store = account ? storage(required('CLOUDFLARE_ACCOUNT_ID'), required('CLOUDFLARE_API_TOKEN'),
+  const api = account ? instagram(account, required('INSTAGRAM_ACCESS_TOKEN'), process.env.INSTAGRAM_API_VERSION, process.env.INSTAGRAM_GRAPH_HOST) : undefined;
+  const store = account ? storage(required('CLOUDFLARE_ACCOUNT_ID'), process.env.CLOUDFLARE_D1_API_TOKEN || required('CLOUDFLARE_API_TOKEN'),
     required('CLOUDFLARE_D1_ID'), required('MEDIA_BASE_URL')) : undefined;
   if (api && store && account && await checkPublication(api, store, account, day)) {
     console.log('This Instagram account already published today.');
