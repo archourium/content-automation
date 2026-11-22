@@ -53,9 +53,7 @@ Follow the [Cloudflare setup guide](docs/cloudflare-setup.md) to create a Worker
 
 ## Connect Instagram
 
-1. Set up Cloudflare Workers AI, D1, and the media Worker using the guide above.
-2. Use Instagram API with Instagram Login for a Professional account. Authorize `instagram_business_basic` and `instagram_business_content_publish`. Set `INSTAGRAM_ACCOUNT_ID` and `INSTAGRAM_ACCESS_TOKEN` in the private scheduler. Use a long-lived token and renew it before it expires.
-3. Run `--mode preview` to review the generated image and caption. Run `--mode instagram` from the authorized installation to publish. Telegram is optional in Instagram mode and can notify you if generation or publishing fails.
+Follow the [Instagram setup guide](docs/instagram-setup.md) to configure a Meta app, accept the Instagram Tester invitation, verify account access, and publish a first photo. Telegram is optional in Instagram mode and can notify you if generation or publishing fails.
 
 Keep real profiles and credentials in the private deployment repository or its secrets. On GitHub, run the CLI from a private Actions repository, check out a pinned version of the library, install dependencies with `npm ci` and pass the profile path. Set an Actions spending limit of zero if billing is enabled on the account. Avoid running the production schedule in a public repo where GitHub can disable an inactive schedule.
 
