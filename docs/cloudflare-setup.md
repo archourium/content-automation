@@ -54,7 +54,7 @@ npx wrangler deploy --config cloudflare/wrangler.jsonc
 
 Run the commands from the checkout root. Use the HTTPS origin shown by the deploy command as `MEDIA_BASE_URL`. The Worker intentionally returns HTTP 404 for its root path. It serves only known, unexpired `/media/<id>.jpg` URLs. During publication, the engine stores each image with a one-day expiration and checks that Meta's image URL responds publicly before requesting publication.
 
-Give the **runtime** token Workers AI Read/Edit and **D1 Edit** on the selected account. If replacing the Workers AI-only token, update the existing GitHub secret with the new token and rerun a preview. Wrangler's deployment login and the runner's runtime credentials are separate. Set the following in the private deployment repository:
+Give the **runtime** token Workers AI Read/Edit and **D1 Edit** on the selected account. If replacing the Workers AI-only token, update the existing GitHub secret with the new token and rerun a preview. Wrangler's deployment login and the runner's runtime credentials are separate. For an isolated token, set **CLOUDFLARE_D1_API_TOKEN** as a GitHub Actions secret with account-scoped D1 Edit and pass it to the runner. The existing **CLOUDFLARE_API_TOKEN** can then stay scoped to Workers AI. Set the following in the private deployment repository:
 
 | Kind | Name | Value |
 | --- | --- | --- |
