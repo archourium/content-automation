@@ -115,6 +115,33 @@ test('rejects a second failed review and refuses invalid or missing review resul
   assert.equal(draws, 3);
 });
 
+test('reviews editorial illustrations with coherent figures and retries an isolated limb as a still life', async () => {
+  const illustration = profileSchema.parse({ ...profile, imageReview: 'editorial-illustration' });
+  const prompts: string[] = [];
+  const { post } = await createPost(illustration, [], now, {
+    async write(system) {
+      assert.match(system, /head and torso/i);
+      return { trendIndex: null, caption: 'Write one line.', altText: 'A hand', imagePrompt: 'A figure seated at a desk' };
+    },
+    draw(prompt) {
+      prompts.push(prompt);
+      return sharp({ create: { width: 32, height: 32, channels: 3, background: '#443399' } }).png().toBuffer();
+    },
+    async inspectImage(_image, instructions) {
+      assert.match(instructions, /detached hands/i);
+      assert.match(instructions, /photographs/i);
+      assert.doesNotMatch(instructions, /reject any visible person/i);
+      return prompts.length === 1
+        ? { approved: false, reason: 'Detached hand.' }
+        : { approved: true, altText: 'A notebook beside an amber lamp.' };
+    }
+  });
+  assert.match(prompts[0], /head and torso/i);
+  assert.match(prompts[1], /unoccupied still life/i);
+  assert.doesNotMatch(prompts[1], /figure seated at a desk/i);
+  assert.equal(post.altText, 'A notebook beside an amber lamp.');
+});
+
 test('redrafts a short caption and stops before rendering if the retry is also short', async () => {
   const caption = 'When you close a tab to take a break, write the first thing you will do when you return.';
   const captionProfile = { ...profile, captionMinWords: 12 };

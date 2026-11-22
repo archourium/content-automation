@@ -53,6 +53,8 @@ The image and caption settings below apply to source checkouts of the current de
 
 Set `"imageReview": "objects-only"` in the profile to generate still-life artwork with FLUX.2 [klein] 9B and require a Gemma 4 review before delivery. This policy rejects people, visible body parts, and prominent visual defects. A rejected image gets one redraw. If a review is unavailable or both candidates fail, the engine returns an error so the deployment can use prepared editorial content.
 
+Use `"imageReview": "editorial-illustration"` for illustrated scenes that can include people. A visible figure needs a readable head and torso, with its hands and arms clearly connected. The reviewer rejects photographic renders and visible defects. If the scene fails review, the engine redraws the topic as an illustrated still life.
+
 Set `captionMinWords` if the profile needs a minimum length for generated copy. The engine requests one rewrite for a caption that falls short.
 
 ## Set up Cloudflare

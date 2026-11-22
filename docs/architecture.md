@@ -1,12 +1,12 @@
 # Content Automation architecture
 
-Content Automation is a reusable Node.js library and CLI. A deployment supplies a brand profile, credentials, a schedule, and the delivery destinations. The diagram shows the shared-photo deployment used for Onypheus, with the object-only image policy enabled.
+Content Automation is a reusable Node.js library and CLI. A deployment supplies a brand profile, credentials, a schedule, and the delivery destinations. The diagram shows the shared-photo deployment used for Onypheus, with editorial illustration review enabled.
 
 ```mermaid
 flowchart TD
     Schedule["GitHub Actions schedule or private preview"] --> Inputs["Brand profile and Google Trends RSS"]
     Inputs --> Draft["GLM-4.7-Flash drafts an English caption and image prompt"]
-    Draft --> Draw["FLUX.2 klein 9B renders a still life"]
+    Draft --> Draw["FLUX.2 klein 9B renders an editorial illustration"]
     Draw --> Jpeg["Prepare the 1080 × 1080 delivery JPEG"]
     Jpeg --> Review{"Gemma 4 reviews the JPEG"}
     Review -->|"Approved"| Bundle["Save the JPEG, caption, and metadata together"]
@@ -16,6 +16,7 @@ flowchart TD
     Draw -.->|"Generation unavailable"| Fallback
     Fallback --> Bundle
     Bundle -->|"Preview"| Artifact["Private GitHub Actions artifact"]
+    Artifact -->|"Manual release after inspection"| Release
     Bundle -->|"Scheduled"| Release["Release at the publication time"]
     Release --> Telegram["Telegram Bot API sends the photo and caption"]
     Release --> D1["Cloudflare D1 stores the JPEG and Instagram publication state"]
@@ -31,9 +32,9 @@ A strict preview requires a newly generated, approved image and fails if that im
 | --- | --- | --- |
 | Draft | [GLM-4.7-Flash](https://developers.cloudflare.com/workers-ai/models/glm-4.7-flash/) | Select a relevant trend from today or yesterday in the brand's timezone, or use one of the profile's editorial topics. Draft the caption and image prompt. |
 | Image | [FLUX.2 `[klein]` 9B](https://developers.cloudflare.com/workers-ai/models/flux-2-klein-9b/) | Generate the square artwork for a profile with `imageReview` enabled. The default image generator for other profiles is [FLUX.1 Schnell](https://developers.cloudflare.com/workers-ai/models/flux-1-schnell/). |
-| Visual review | [Gemma 4 26B A4B](https://developers.cloudflare.com/workers-ai/models/gemma-4-26b-a4b-it/) | Inspect the exact JPEG that would be delivered. Reject people and body parts, obvious malformed objects, visible lettering, watermarks, and unreadable compositions. Supply alt text from the image if approved. |
+| Visual review | [Gemma 4 26B A4B](https://developers.cloudflare.com/workers-ai/models/gemma-4-26b-a4b-it/) | Inspect the exact JPEG that would be delivered. Check the chosen image policy, anatomy, objects, lettering, watermarks, and composition. Supply alt text from approved images. |
 
-The Onypheus profile asks for a concise English caption with a concrete action. If the caption falls below the profile's minimum length, the engine requests one rewrite before generating an image. The image prompt and renderer both use an inanimate still life with a clear focal point. One visual rejection triggers a simpler redraw. A failed request, malformed decision, or second rejection stops AI publication. Review is an automated visual check and can miss defects.
+The Onypheus profile asks for a concise English caption with a concrete action. If the caption falls below the profile's minimum length, the engine requests one rewrite before generating an image. Onypheus uses textured 2D illustrations in navy, violet, and amber. A scene can include a person if the head and torso are readable and any visible limbs connect naturally. A visual rejection triggers a redraw as an illustrated still life. A failed request, malformed decision, or second rejection stops AI publication. Review is an automated visual check and can miss defects.
 
 ## Scheduling and delivery
 
