@@ -59,6 +59,7 @@ async function main() {
   }
 
   const profile = profileSchema.parse(JSON.parse(await readFile(values.profile, 'utf8')));
+  if (values.fixture) delete profile.captionMinWords;
   const now = new Date();
   const day = localDate(now, profile.timeZone);
   const previousDay = localDate(new Date(Date.parse(day) - 86_400_000), 'UTC');

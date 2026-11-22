@@ -12,7 +12,7 @@ flowchart TD
     Review -->|"Approved"| Bundle["Save the JPEG, caption, and metadata together"]
     Review -->|"First visual rejection"| Draw
     Review -->|"Second rejection or invalid review"| Fallback["Scheduled run uses prepared editorial artwork and copy"]
-    Draft -.->|"Generation unavailable"| Fallback
+    Draft -.->|"Caption generation fails"| Fallback
     Draw -.->|"Generation unavailable"| Fallback
     Fallback --> Bundle
     Bundle -->|"Preview"| Artifact["Private GitHub Actions artifact"]
@@ -33,7 +33,7 @@ A strict preview requires a newly generated, approved image and fails if that im
 | Image | [FLUX.2 `[klein]` 9B](https://developers.cloudflare.com/workers-ai/models/flux-2-klein-9b/) | Generate the square artwork for a profile with `imageReview` enabled. The default image generator for other profiles is [FLUX.1 Schnell](https://developers.cloudflare.com/workers-ai/models/flux-1-schnell/). |
 | Visual review | [Gemma 4 26B A4B](https://developers.cloudflare.com/workers-ai/models/gemma-4-26b-a4b-it/) | Inspect the exact JPEG that would be delivered. Reject people and body parts, obvious malformed objects, visible lettering, watermarks, and unreadable compositions. Supply alt text from the image if approved. |
 
-The Onypheus profile uses an inanimate still life with a clear focal point. The engine applies that constraint when drafting and rendering the image. One rejection triggers a simpler redraw. A failed request, malformed decision, or second rejection stops AI publication. Review is an automated visual check and can miss defects.
+The Onypheus profile asks for a concise English caption with a concrete action. If the caption falls below the profile's minimum length, the engine requests one rewrite before generating an image. The image prompt and renderer both use an inanimate still life with a clear focal point. One visual rejection triggers a simpler redraw. A failed request, malformed decision, or second rejection stops AI publication. Review is an automated visual check and can miss defects.
 
 ## Scheduling and delivery
 

@@ -114,3 +114,24 @@ test('rejects a second failed review and refuses invalid or missing review resul
   }), /failed visual review twice/);
   assert.equal(draws, 3);
 });
+
+test('redrafts a short caption and stops before rendering if the retry is also short', async () => {
+  const caption = 'When you close a tab to take a break, write the first thing you will do when you return.';
+  const captionProfile = { ...profile, captionMinWords: 12 };
+  const draft = { trendIndex: null, caption: 'Take a break.', altText: 'A journal', imagePrompt: 'A journal' };
+  let writes = 0;
+  const generator = {
+    async write() {
+      writes++;
+      return writes === 2 ? { ...draft, caption } : draft;
+    },
+    draw: () => sharp({ create: { width: 32, height: 32, channels: 3, background: '#554477' } }).png().toBuffer()
+  };
+  assert.equal((await createPost(captionProfile, [], now, generator)).post.caption, caption);
+  assert.equal(writes, 2);
+  await assert.rejects(createPost(captionProfile, [], now, {
+    ...generator,
+    draw() { throw new Error('The short caption should never reach the image model.'); }
+  }), /caption did not meet the minimum/);
+  assert.equal(writes, 4);
+});
